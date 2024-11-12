@@ -31,7 +31,7 @@ class Gladiador {
     var property fuerza
     var property arma
     var vida = 100
-    const property armadura
+    var property armadura
     var property destreza
 
     method ataque()
@@ -51,11 +51,15 @@ class Gladiador {
     method curar() {
         vida = 100
     }
+    method recibirAtaque(num) {
+        vida -= 0.max(num)
+    }
+    method puedePelear() = vida > 0
 }
 class Mirmillon inherits Gladiador {
 
     override method arma() = espada
-    override method armadura() = escudo.puntos() + casco.puntos()
+    override method armadura() = escudo.puntos(self) + casco.puntos(self)
     override method destreza() = 15
     override method atacar(unGladiador) {
         unGladiador.recibirAtaque(self.ataque() - unGladiador.defenderse())
@@ -66,7 +70,8 @@ class Mirmillon inherits Gladiador {
         return armadura.sum({a => a.puntos()})
     }
     override method crearGrupoCon(gladiadores) {
-        return new Grupo(nombre="mirmillolandia", cantPeleas=0, gladiadores=gladiadores + self)
+        const nuevoGrupo new Grupo(nombre="mirmillolandia", cantPeleas=0, gladiadores=[gladiadores, self])
+        return nuevoGrupo
     }
 }
 class Dimachaerus inherits Gladiador {
@@ -83,7 +88,7 @@ class Dimachaerus inherits Gladiador {
     }
     override method defenderse() = destreza / 2
     override method crearGrupoCon(gladiadores) {
-        return new Grupo(nombre="D-" + self.sumarPoderes(gladiadores), cantPeleas=0, gladiadores=gladiadores + self)
+        return new Grupo(nombre="D-" + self.sumarPoderes(gladiadores), cantPeleas=0, gladiadores=[gladiadores, self])
     }
     method sumarPoderes(gladiadores) {
         return gladiadores.sum({g => g.ataque()}) + self.ataque()
@@ -91,10 +96,10 @@ class Dimachaerus inherits Gladiador {
 }
 
 object casco {
-    method puntos() = 10
+    method puntos(unGladiador) = 10
 }
 object escudo {
-    method puntos() = 5 + (Gladiador.destreza() * 0.1)
+    method puntos(unGladiador) = 5 + (unGladiador.destreza() * 0.1)
 }
 
 class Grupo {
@@ -102,36 +107,46 @@ class Grupo {
     var cantPeleas
     const gladiadores
 
+    method aumentarPeleas(){
+        cantPeleas += 1
+    }
     method agregarGladiador(unGladiador) {
         gladiadores.add(unGladiador)
     }
     method sacarGladiador(unGladiador) {
         gladiadores.remove(unGladiador)
     }
-    method combatirA(unGrupo) {
-        return new Combate(campeon=self.elMasFuerte())
-        unGrupo.forEach({c => c.combatirA(self)})
+    method combatir(unGrupo) {
+        self.aumentarPeleas()
+        unGrupo.aumentarPeleas()
+        [1..3].forEach({r => self.elMasFuerte().combatir(unGrupo.elMasFuerte())})
     }
     method elMasFuerte() {
-        if (gladiadores.max({g => g.fuerza()}).vida() > 0) {
-            return gladiadores.max({g => g.fuerza()})
+        const puedenPelear = gladiadores.filter({g => g.puedePelear()})
+        if (puedenPelear.isEmpty()) {
+            self.error("No hay gladiadores que puedan pelear")
         }
         else {
-            return
+            return puedenPelear.max({g => g.fuerza()})
         }
     }
+    method curarATodos() {
+        gladiadores.forEach({g => g.curar()})
+    }
 }
-class Combate {
-    var property campeon
-    var property grupo1
-    var property grupo2
 
-    method combatir(participe1, participe2) {
-        grupo1.combatirA(grupo2)
-    }
-    method curar() {
-        grupo1.forEach({c => c.curar()})
-        grupo2.forEach({c => c.curar()})
-    }
+//NOOOOOOOOOOO
+// class Combate {
+//     var property campeon
+//     var property grupo1
+//     var property grupo2
+
+//     method combatir(participe1, participe2) {
+//         grupo1.combatirA(grupo2)
+//     }
+//     method curar() {
+//         grupo1.forEach({c => c.curar()})
+//         grupo2.forEach({c => c.curar()})
+//     }
     
-}
+// }
